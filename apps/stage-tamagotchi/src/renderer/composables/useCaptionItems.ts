@@ -1,8 +1,7 @@
-import { readonly, shallowRef } from 'vue'
+import type { CaptionChannelEvent } from '@proj-airi/stage-shared'
+import type { Ref } from 'vue'
 
-export type CaptionChannelEvent
-  = | { type: 'caption-speaker', text: string }
-    | { type: 'caption-assistant', text: string }
+import { readonly, shallowRef, toValue } from 'vue'
 
 export interface CaptionItem {
   /** Stable render key and timer owner for one broadcast caption event. */
@@ -11,20 +10,31 @@ export interface CaptionItem {
   type: CaptionChannelEvent['type']
   /** Text payload rendered by the overlay. */
   text: string
+  /** Optional live chat sender name. */
+  username?: string
+  /** Optional live chat avatar URL. */
+  avatar?: string
+  /** Optional live chat message color. */
+  color?: string
 }
 
 export interface UseCaptionItemsOptions {
   /**
    * How long one caption event should stay visible before removing itself.
+   * Accepts a ref so callers can react to settings changes without
+   * recreating the store.
    *
    * @default 5000
    */
-  ttlMs?: number
+  ttlMs?: number | Ref<number>
+  /** Maximum number of items kept in memory. */
+  maxItems?: number
 }
 
 const defaultCaptionItemsOptions = {
   ttlMs: 5_000,
-} satisfies Required<UseCaptionItemsOptions>
+  maxItems: 80,
+} satisfies Required<Omit<UseCaptionItemsOptions, 'ttlMs'>> & { ttlMs: number }
 
 /**
  * Manages caption overlay items with per-event expiry.
@@ -41,7 +51,7 @@ const defaultCaptionItemsOptions = {
  * - Readonly caption items plus actions for adding events and clearing timers.
  */
 export function useCaptionItems(options: UseCaptionItemsOptions = {}) {
-  const { ttlMs } = { ...defaultCaptionItemsOptions, ...options }
+  const { ttlMs, maxItems } = { ...defaultCaptionItemsOptions, ...options }
   const items = shallowRef<CaptionItem[]>([])
   const expiryTimers = new Map<CaptionItem['id'], ReturnType<typeof setTimeout>>()
   let nextId = 1
@@ -78,11 +88,20 @@ export function useCaptionItems(options: UseCaptionItemsOptions = {}) {
       id: nextId++,
       type: event.type,
       text: event.text,
+      username: event.type === 'caption-live-chat' ? event.username : undefined,
+      avatar: event.type === 'caption-live-chat' ? event.avatar : undefined,
+      color: event.type === 'caption-live-chat' ? event.color : undefined,
     }
-    items.value = [...items.value, item]
+    const nextItems = [...items.value, item]
+    if (nextItems.length > maxItems) {
+      const removedItems = nextItems.splice(0, nextItems.length - maxItems)
+      for (const removedItem of removedItems)
+        clearTimer(removedItem.id)
+    }
+    items.value = nextItems
     expiryTimers.set(item.id, setTimeout(() => {
       remove(item.id)
-    }, ttlMs))
+    }, toValue(ttlMs)))
   }
 
   function dispose() {

@@ -3,6 +3,7 @@ import type { InferOutput } from 'valibot'
 
 import type { I18n } from '../../libs/i18n'
 import type { ServerChannel } from '../../services/airi/channel-server'
+import type { NowPlayingEngine } from '../../services/airi/now-playing'
 
 import { createHash } from 'node:crypto'
 import { join, resolve } from 'node:path'
@@ -21,6 +22,7 @@ import { captionGetIsFollowingWindow, captionIsFollowingWindowChanged } from '..
 import { baseUrl, getElectronMainDirname, load, withHashRoute } from '../../libs/electron/location'
 import { createConfig } from '../../libs/electron/persistence'
 import { createReusableWindow } from '../../libs/electron/window-manager'
+import { createNowPlayingService } from '../../services/airi/now-playing'
 import { mapForBreakpoints, resolutionBreakpoints, widthFrom } from '../shared/display'
 import { protectPrivilegedWindowNavigation, setupBaseWindowElectronInvokes, transparentWindowConfig } from '../shared/window'
 
@@ -146,6 +148,7 @@ export function setupCaptionWindowManager(params: {
   mainWindow: BrowserWindow
   serverChannel: ServerChannel
   i18n: I18n
+  nowPlaying: NowPlayingEngine
 }) {
   const matrixHash = computeDisplayMatrixHash()
 
@@ -309,6 +312,7 @@ export function setupCaptionWindowManager(params: {
     eventaContext = context
 
     await setupBaseWindowElectronInvokes({ context, window, serverChannel: params.serverChannel, i18n: params.i18n })
+    createNowPlayingService({ context, engine: params.nowPlaying, window })
 
     applyIgnoreMouseEvents(window, isFollowing)
 

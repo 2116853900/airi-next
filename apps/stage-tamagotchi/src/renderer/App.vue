@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import type { WebSocketEventInputLiveChat } from '@proj-airi/server-sdk'
+import type { LiveChatOverlayMessage } from '@proj-airi/stage-shared'
+
 import { defineInvokeHandler } from '@moeru/eventa'
 import { useElectronEventaContext, useElectronEventaInvoke } from '@proj-airi/electron-vueuse'
 import { themeColorFromValue, useThemeColor } from '@proj-airi/stage-layouts/composables/theme-color'
-import { artistrySyncConfig } from '@proj-airi/stage-shared'
+import { artistrySyncConfig, LIVE_CHAT_OVERLAY_CHANNEL } from '@proj-airi/stage-shared'
 import { ToasterRoot } from '@proj-airi/stage-ui/components'
 import { useInferencePreload } from '@proj-airi/stage-ui/composables'
 import { useAuthProviderSync } from '@proj-airi/stage-ui/composables/use-auth-provider-sync'
@@ -21,6 +24,7 @@ import { usePerfTracerBridgeStore } from '@proj-airi/stage-ui/stores/perf-tracer
 import { listProvidersForPluginHost, shouldPublishPluginHostCapabilities } from '@proj-airi/stage-ui/stores/plugin-host-capabilities'
 import { useSettings, useSettingsAudioDevice } from '@proj-airi/stage-ui/stores/settings'
 import { useTheme } from '@proj-airi/ui'
+import { useBroadcastChannel } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { onMounted, onUnmounted, watch } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
@@ -55,6 +59,7 @@ import { electronPluginToolsChanged } from '../shared/eventa/plugin/tools'
 import { initializeElectronAuthCallbackBridge } from './bridges/electron-auth-callback'
 import { initializeStageThreeRuntimeTraceBridge } from './bridges/stage-three-runtime-trace'
 import { useLanguage } from './composables/use-language'
+import { useLiveChatAiReply } from './composables/use-live-chat-ai-reply'
 import { useServerChannelSettingsStore } from './stores/settings/server-channel'
 import { useStageWindowLifecycleStore } from './stores/stage-window-lifecycle'
 import {
@@ -139,8 +144,53 @@ function createFullStageRuntime() {
   const getGodotStageStatus = useElectronEventaInvoke(electronGodotStageGetStatus)
   const syncArtistryConfig = useElectronEventaInvoke(artistrySyncConfig)
   const isAuxiliaryChatRoute = initialWindowRoutePath === '/chat'
+  // The main stage window owns live-chat consumption for the AI reply flow; the
+  // danmaku overlay window registers as the fallback consumer so the overlay
+  // keeps working when the main window is closed.
+  const isLiveChatCaptionHost = initialWindowRoutePath === '/danmaku'
+  const isLiveChatReplyHost = initialWindowRoutePath === '/'
+  // Transparent overlay windows render external content only (captions, danmaku,
+  // lyrics); they must not register as chat-ingestion consumers or run the
+  // character orchestrator that the main UI window owns.
+  const isOverlayWindow = initialWindowRoutePath === '/caption'
+    || initialWindowRoutePath === '/danmaku'
+    || initialWindowRoutePath === '/lyrics'
   const isGodotStageRoute = () => route.path === '/' || route.path.startsWith('/settings')
   const isWidgetsWindowRoute = () => route.path === '/widgets'
+  const { post: postLiveChat } = useBroadcastChannel<LiveChatOverlayMessage, LiveChatOverlayMessage>({ name: LIVE_CHAT_OVERLAY_CHANNEL })
+  const liveChatAiReply = useLiveChatAiReply()
+  let disposeLiveChatListener: (() => void) | undefined
+  let disposeLiveChatConsumer: (() => void) | undefined
+
+  /**
+   * Registers this window as the server-channel consumer for live-chat.
+   *
+   * The delivery picks one consumer per group by priority, so the main window
+   * registers with a higher priority to win over the danmaku overlay fallback.
+   */
+  function registerLiveChatConsumer(priority?: number) {
+    serverChannelStore.send({
+      type: 'module:consumer:register',
+      data: {
+        event: 'input:live-chat',
+        mode: 'consumer-group',
+        group: 'live-chat-overlay',
+        ...(priority !== undefined ? { priority } : {}),
+      },
+    })
+  }
+
+  /** Forwards one danmaku to the overlay window via the shared broadcast channel. */
+  function forwardLiveChatToOverlay(message: WebSocketEventInputLiveChat) {
+    postLiveChat({
+      id: `${message.platform}:${message.roomId}:${message.messageId}`,
+      username: message.username,
+      text: message.text,
+      avatar: message.avatar,
+      color: message.color,
+      level: message.level,
+    })
+  }
 
   function syncGodotStageRenderer(state: { state: 'stopped' | 'starting' | 'running' | 'stopping' | 'error' }) {
     if (state.state === 'running') {
@@ -238,9 +288,41 @@ function createFullStageRuntime() {
 
       await serverChannelStore.initialize({
         token: serverChannelConfig.authToken || undefined,
-        possibleEvents: ['ui:configure'],
+        possibleEvents: (isLiveChatCaptionHost || isLiveChatReplyHost) ? ['ui:configure', 'input:live-chat'] : ['ui:configure'],
       }).catch(err => console.error('Failed to initialize Mods Server Channel in App.vue:', err))
-      if (!isAuxiliaryChatRoute) {
+      if (isLiveChatReplyHost) {
+        registerLiveChatConsumer(1)
+        // The server channel drops `input:live-chat` while no consumer is
+        // registered for the `live-chat-overlay` group, so re-register after
+        // every reconnect to close the danmaku blackout window.
+        disposeLiveChatConsumer = serverChannelStore.onReconnected(() => registerLiveChatConsumer(1))
+        disposeLiveChatListener = serverChannelStore.onEvent('input:live-chat', (event) => {
+          const message = event.data
+          try {
+            forwardLiveChatToOverlay(message)
+          }
+          catch (error) {
+            console.warn('[App] Failed to post live chat danmaku:', error)
+          }
+          // Feed qualifying danmaku into the chat authority; the character's
+          // reply is spoken through the speech pipeline and kept in history.
+          void liveChatAiReply.handleLiveChatMessage(message)
+        })
+      }
+      else if (isLiveChatCaptionHost) {
+        registerLiveChatConsumer()
+        disposeLiveChatConsumer = serverChannelStore.onReconnected(() => registerLiveChatConsumer())
+        disposeLiveChatListener = serverChannelStore.onEvent('input:live-chat', (event) => {
+          const message = event.data
+          try {
+            forwardLiveChatToOverlay(message)
+          }
+          catch (error) {
+            console.warn('[App] Failed to post live chat danmaku:', error)
+          }
+        })
+      }
+      if (!isAuxiliaryChatRoute && !isOverlayWindow) {
         contextBridgeStore.initialize()
         if (!isWidgetsWindowRoute()) {
           characterOrchestratorStore.initialize()
@@ -263,7 +345,12 @@ function createFullStageRuntime() {
       inferencePreload.triggerPreload()
     },
     dispose() {
-      if (!isAuxiliaryChatRoute)
+      disposeLiveChatListener?.()
+      disposeLiveChatListener = undefined
+      disposeLiveChatConsumer?.()
+      disposeLiveChatConsumer = undefined
+      liveChatAiReply.dispose()
+      if (!isAuxiliaryChatRoute && !isOverlayWindow)
         contextBridgeStore.dispose()
     },
   }

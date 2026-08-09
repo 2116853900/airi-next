@@ -1,0 +1,18 @@
+{
+  "name": "@proj-airi/stage-tamagotchi-unibarrage",
+  "type": "module",
+  "version": "0.11.3",
+  "private": true,
+  "description": "Vendored UniBarrage danmaku proxy/forwarder engine bundled by stage-tamagotchi",
+  "author": {
+    "name": "Moeru AI Project AIRI Team",
+    "email": "airi@moeru.ai",
+    "url": "https://github.com/moeru-ai"
+  },
+  "license": "GPL-3.0",
+  "scripts": {
+    "build": "node ./scripts/build.mjs",
+    "typecheck": "go vet ./...",
+    "test": "go test ./..."
+  }
+}

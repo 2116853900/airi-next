@@ -1,6 +1,11 @@
 import type { BeatSyncDetectorState } from '@proj-airi/stage-shared/beat-sync'
+import type { NowPlayingState } from '@proj-airi/stage-shared/now-playing'
 
+import { defineInvoke } from '@moeru/eventa'
+import { createContext } from '@moeru/eventa/adapters/electron/renderer'
+import { isStageTamagotchi } from '@proj-airi/stage-shared'
 import { getBeatSyncState, isBeatSyncSupported, listenBeatSyncStateChange } from '@proj-airi/stage-shared/beat-sync'
+import { nowPlayingGetStateInvokeEventa, nowPlayingStateChangedInvokeEventa } from '@proj-airi/stage-shared/now-playing'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -45,6 +50,7 @@ export function useModulesList() {
   const artistryStore = useArtistryStore()
   const beatSyncState = ref<BeatSyncDetectorState>()
   const beatSyncSupported = isBeatSyncSupported()
+  const nowPlayingState = ref<NowPlayingState>()
 
   minecraftStore.initialize()
 
@@ -140,6 +146,24 @@ export function useModulesList() {
       category: 'messaging',
     },
     {
+      id: 'live-chat',
+      name: t('settings.pages.modules.live_chat.title'),
+      description: t('settings.pages.modules.live_chat.description'),
+      icon: 'i-solar:chat-round-bold-duotone',
+      to: '/settings/modules/live-chat',
+      configured: false,
+      category: 'messaging',
+    },
+    {
+      id: 'live-room',
+      name: t('settings.pages.modules.live_room.title'),
+      description: t('settings.pages.modules.live_room.description'),
+      icon: 'i-solar:chat-square-bold-duotone',
+      to: '/settings/modules/live-room',
+      configured: false,
+      category: 'messaging',
+    },
+    {
       id: 'gaming-minecraft',
       name: t('settings.pages.modules.gaming-minecraft.title'),
       description: t('settings.pages.modules.gaming-minecraft.description'),
@@ -177,6 +201,15 @@ export function useModulesList() {
           category: 'essential',
         }]
       : []),
+    {
+      id: 'now-playing',
+      name: t('settings.pages.modules.now_playing.title'),
+      description: t('settings.pages.modules.now_playing.description'),
+      icon: 'i-solar:vinyl-bold-duotone',
+      to: '/settings/modules/now-playing',
+      configured: nowPlayingState.value?.track != null && nowPlayingState.value.status !== 'stopped',
+      category: 'essential',
+    },
   ])
 
   const categorizedModules = computed(() => {
@@ -204,6 +237,27 @@ export function useModulesList() {
 
     getBeatSyncState().then(initialState => beatSyncState.value = initialState)
     const removeListener = listenBeatSyncStateChange(newState => beatSyncState.value = { ...newState })
+    onUnmounted(() => removeListener())
+  })
+
+  onMounted(() => {
+    if (!isStageTamagotchi())
+      return
+
+    const ipcRenderer = (window as Window & { electron?: { ipcRenderer?: unknown } }).electron?.ipcRenderer
+    if (!ipcRenderer)
+      return
+
+    const { context } = createContext(ipcRenderer as Parameters<typeof createContext>[0])
+    const getState = defineInvoke(context, nowPlayingGetStateInvokeEventa)
+    const removeListener = context.on(nowPlayingStateChangedInvokeEventa, (event) => {
+      if (event?.body)
+        nowPlayingState.value = event.body
+    })
+    void getState().then((state) => {
+      nowPlayingState.value = state
+    }).catch(() => {})
+
     onUnmounted(() => removeListener())
   })
 

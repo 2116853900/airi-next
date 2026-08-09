@@ -303,7 +303,18 @@ export const useModsServerChannelStore = defineStore('mods:channels:proj-airi:se
       void initialize()
 
     if (client.value && connected.value) {
-      client.value.send(data as WebSocketEvent)
+      // NOTICE: connected.value may be true before the transport is fully
+      // ready (e.g. after module:authenticated before onReady), causing
+      // client.value.send() to return false. Fall back to the pending queue
+      // so the message is flushed once the transport reaches ready state.
+      // Root cause: connected.value is set in the module:authenticated
+      // handler, but the transport's send() requires state === 'ready'.
+      // The pending queue is flushed in onReady (and for reconnects also
+      // in module:authenticated).
+      const sent = client.value.send(data as WebSocketEvent)
+      if (!sent) {
+        pendingSend.value.push(data as WebSocketEvent)
+      }
     }
     else {
       pendingSend.value.push(data as WebSocketEvent)
@@ -312,11 +323,17 @@ export const useModsServerChannelStore = defineStore('mods:channels:proj-airi:se
 
   function flush() {
     if (client.value && connected.value) {
+      const unsent: Array<WebSocketEvent> = []
       for (const update of pendingSend.value) {
-        client.value.send(update)
+        // NOTICE: client.value.send() returns false when the transport is
+        // not yet ready. Keep unsent messages in the queue so they are
+        // retried on the next flush (e.g. after onReady).
+        if (!client.value.send(update)) {
+          unsent.push(update)
+        }
       }
 
-      pendingSend.value = []
+      pendingSend.value = unsent
     }
   }
 

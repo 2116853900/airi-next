@@ -5,6 +5,8 @@ import type { I18n } from '../libs/i18n'
 import type { ServerChannel } from '../services/airi/channel-server'
 import type { setupBeatSync } from '../windows/beat-sync'
 import type { setupCaptionWindowManager } from '../windows/caption'
+import type { setupDanmakuWindowManager } from '../windows/danmaku'
+import type { setupLyricsWindowManager } from '../windows/lyrics'
 import type { SettingsWindowManager } from '../windows/settings'
 import type { WidgetsWindowManager } from '../windows/widgets'
 
@@ -91,6 +93,8 @@ export function setupTray(params: {
   mainWindow: BrowserWindow
   settingsWindow: SettingsWindowManager
   captionWindow: ReturnType<typeof setupCaptionWindowManager>
+  danmakuWindow: ReturnType<typeof setupDanmakuWindowManager>
+  lyricsWindow: ReturnType<typeof setupLyricsWindowManager>
   widgetsWindow: WidgetsWindowManager
   beatSyncBgWindow: Awaited<ReturnType<typeof setupBeatSync>>
   aboutWindow: () => Promise<BrowserWindow>
@@ -208,6 +212,22 @@ export function setupTray(params: {
             { label: params.i18n.t('tamagotchi.electron.tray.menu.labels.label.reset_position'), click: async () => await params.captionWindow.resetToSide() },
           ]),
         },
+        {
+          label: params.i18n.t(params.danmakuWindow.isVisible()
+            ? 'tamagotchi.electron.tray.menu.labels.label.close_danmaku'
+            : 'tamagotchi.electron.tray.menu.labels.label.open_danmaku'),
+          click: () => {
+            void params.danmakuWindow.toggleVisibility().then(() => rebuildContextMenu())
+          },
+        },
+        {
+          label: params.i18n.t(params.lyricsWindow.isVisible()
+            ? 'tamagotchi.electron.tray.menu.labels.label.close_lyrics'
+            : 'tamagotchi.electron.tray.menu.labels.label.open_lyrics'),
+          click: () => {
+            void params.lyricsWindow.toggleVisibility().then(() => rebuildContextMenu())
+          },
+        },
         { type: 'separator' },
         ...is.dev || env.MAIN_APP_DEBUG || env.APP_DEBUG
           ? [
@@ -225,6 +245,8 @@ export function setupTray(params: {
     params.mainWindow.on('resize', rebuildContextMenu)
     params.mainWindow.on('move', rebuildContextMenu)
     const visibilityChangeUnListener = params.captionWindow.onVisibilityChanged(rebuildContextMenu)
+    const danmakuVisibilityUnListener = params.danmakuWindow.onVisibilityChanged(rebuildContextMenu)
+    const lyricsVisibilityUnListener = params.lyricsWindow.onVisibilityChanged(rebuildContextMenu)
 
     rebuildContextMenu()
 
@@ -241,6 +263,8 @@ export function setupTray(params: {
       params.mainWindow.off('move', rebuildContextMenu)
 
       visibilityChangeUnListener()
+      danmakuVisibilityUnListener()
+      lyricsVisibilityUnListener()
       stopLocaleEffect()
 
       rebuildContextMenu.cancel()

@@ -539,6 +539,34 @@ pages:
             warmup:
               description: Whether to warm up before detecting beats for better accuracy.
               label: Warmup
+    now_playing:
+      title: Now Playing
+      description: Show the currently playing song with synced lyrics on the lyrics overlay
+      sections:
+        behavior:
+          title: Behavior
+          enabled:
+            label: Enable now playing
+            description: Detect the song playing on this machine via MPRIS (Linux).
+          auto_beat_sync:
+            label: Auto-enable beat sync
+            description: Let the character dance when a song starts playing.
+        lyrics_source:
+          title: Lyrics source
+          description: LRCLIB first, with NetEase as fallback for Chinese songs.
+          options:
+            lrclib: LRCLIB only
+            lrclib_netease: LRCLIB + NetEase
+          show_on_overlay:
+            label: Show lyrics on the lyrics overlay
+        status:
+          title: Status
+          no_player: No media player detected
+          refresh: Refresh lyrics
+          desktop_only: Now Playing is only available in the desktop app.
+          source_none: no lyrics
+          source_lrclib: LRCLIB
+          source_netease: NetEase
     artistry:
       title: Artistry
       description: Image generation, scene background and drawing.
@@ -879,6 +907,114 @@ pages:
         opened: Opened {path} in your file manager
         json-applied: JSON applied to the form. Click "Save and restart" to persist it to disk.
         restarted: All restarted! {started} started, {failed} failed, {skipped} skipped.
+    live_chat:
+      title: Live Chat
+      description: Show live chat (danmaku) messages on the desktop danmaku overlay
+      sections:
+        display:
+          title: Display
+          description: Tune how live chat messages appear on the danmaku overlay.
+          show_on_overlay:
+            label: Show live chat on the danmaku overlay
+            description: Display incoming live chat messages on the desktop danmaku overlay.
+          dedupe:
+            enabled:
+              label: Filter repeated messages
+              description: Hide the same danmaku text when it repeats too often within the window.
+            window:
+              label: Repeat window
+              description: Sliding time window in which repeats of the same danmaku text are counted.
+            max_repeats:
+              label: Max occurrences
+              description: The same danmaku text is hidden once it has appeared this many times within the window.
+          max_items:
+            label: Visible messages
+            description: How many live chat messages stay visible at once.
+          ttl:
+            label: Display duration
+            description: How long a message stays before it disappears.
+          font_size:
+            label: Font size
+          opacity:
+            label: Background opacity
+        theme:
+          title: Theme
+          description: Customize the danmaku overlay appearance.
+          bg_opacity:
+            label: Background opacity
+            description: How opaque the overlay background is.
+          text_color:
+            label: Text color
+            description: Hex color for danmaku text (e.g. # f5f5f5).
+          msg_bg_color:
+            label: Message background color
+            description: Background color for each danmaku message.
+          msg_bg_opacity:
+            label: Message background opacity
+            description: How opaque each danmaku message background is.
+          show_level:
+            label: Show user level
+            description: Display the user level badge next to the username.
+          level_colors:
+            title: Level-based text color
+            description: Custom text colors for specific user levels.
+            level_placeholder: Level
+            add: Add level color
+        ai_reply:
+          title: AI Reply
+          description: Let the character reply with voice to qualifying danmaku.
+          enabled:
+            label: Enable AI reply
+            description: The character replies with voice when a danmaku qualifies.
+          trigger:
+            options:
+              mention: Only when mentioned
+              all: Every danmaku
+          trigger_keywords:
+            label: Extra trigger keywords
+            description: Comma-separated keywords (besides the character name) that count as a mention.
+            placeholder: e.g. 空降, 主播
+          cooldown:
+            label: Reply cooldown
+            description: Minimum gap between two AI replies.
+          include_sender:
+            label: Include sender name
+            description: Prefix the reply context with the danmaku sender name.
+          max_length:
+            label: Max message length
+            description: Danmaku longer than this many characters is ignored.
+    live_room:
+      title: Live Room
+      description: Connect to Bilibili and Douyin live rooms
+      desktop_only: Live Room is only available in the desktop app.
+      rooms:
+        title: Rooms
+        description: Add live rooms to watch. Bilibili and Douyin connect through the built-in UniBarrage engine.
+        empty: No live rooms yet. Add one below.
+        remove: Remove
+        state:
+          idle: Idle
+          connecting: Connecting…
+          connected: Connected
+          error: Error
+          stopped: Stopped
+        add:
+          room_id: Room ID
+          room_id_placeholder: e.g. 6 or 123456
+          action: Add room
+          error:
+            required: Room ID is required.
+            failed: Failed to add the room.
+      unibarrage:
+        title: Built-in engine (UniBarrage)
+        description: The app bundles UniBarrage and starts it automatically at launch. It powers Bilibili and Douyin live rooms.
+        state:
+          stopped: Stopped
+          starting: Starting…
+          running: Running
+          error: Error
+        ports: 'ws {ws} · api {api}'
+        error_hint: See the app logs for details.
   flux:
     title: Flux
     buy: Charge

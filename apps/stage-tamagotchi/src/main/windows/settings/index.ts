@@ -2,7 +2,10 @@ import type { I18n } from '../../libs/i18n'
 import type { WindowAuthManager } from '../../services/airi/auth'
 import type { ServerChannel } from '../../services/airi/channel-server'
 import type { GodotStageManager } from '../../services/airi/godot-stage'
+import type { LiveChatService } from '../../services/airi/live-chat'
 import type { McpStdioManager } from '../../services/airi/mcp-servers'
+import type { NowPlayingEngine } from '../../services/airi/now-playing'
+import type { UniBarrageManager } from '../../services/airi/unibarrage'
 import type { AutoUpdater } from '../../services/electron/auto-updater'
 import type { GlobalShortcutService } from '../../services/electron/global-shortcut'
 import type { DevtoolsWindowManager } from '../devtools'
@@ -40,6 +43,9 @@ export function setupSettingsWindowReusableFunc(params: {
   windowAuthManager: WindowAuthManager
   globalShortcut: GlobalShortcutService
   spotlightWindow: SpotlightWindowManager
+  nowPlaying: NowPlayingEngine
+  liveChat: LiveChatService
+  unibarrageManager: UniBarrageManager
 }): SettingsWindowManager {
   const rendererBase = baseUrl(resolve(getElectronMainDirname(), '..', 'renderer'))
   const defaultRoute = '/settings'
@@ -79,6 +85,9 @@ export function setupSettingsWindowReusableFunc(params: {
       windowAuthManager: params.windowAuthManager,
       globalShortcut: params.globalShortcut,
       spotlightWindow: params.spotlightWindow,
+      nowPlaying: params.nowPlaying,
+      liveChat: params.liveChat,
+      unibarrageManager: params.unibarrageManager,
     })
 
     await load(window, withHashRoute(rendererBase, currentRoute))

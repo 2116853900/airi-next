@@ -103,6 +103,11 @@ export default {
       to: 'godot-stage',
       filter: ['**/*'],
     },
+    {
+      from: '../../engines/stage-tamagotchi-unibarrage/out/${os}',
+      to: 'unibarrage',
+      filter: ['**/*'],
+    },
   ],
   extraMetadata: {
     name: 'ai.moeru.airi',

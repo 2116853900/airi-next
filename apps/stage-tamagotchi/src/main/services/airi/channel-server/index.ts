@@ -132,6 +132,14 @@ async function getChannelServerConfig(): Promise<ElectronServerChannelConfig> {
   }
 }
 
+/**
+ * Returns the current server channel auth token so in-app services (e.g. the
+ * live-chat connector) can open a loopback client to the local channel.
+ */
+export function getChannelServerAuthToken(): string {
+  return channelServerConfigStore.get()?.authToken ?? ''
+}
+
 function getServerRuntimeBaseOptions() {
   return {
     port: getServerChannelPort(),

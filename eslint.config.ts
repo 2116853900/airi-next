@@ -26,6 +26,9 @@ export default defineConfig({
     '**/drizzle/**',
     '**/.astro/**',
     'docs/superpowers/**',
+    'engines/stage-tamagotchi-unibarrage/douyin/jsScript/**',
+    'engines/stage-tamagotchi-unibarrage/**/client/**',
+    'engines/stage-tamagotchi-unibarrage/docs/**',
     '.agents/**',
     '.github/**',
     'CLAUDE.md', // Skip the symbolic link

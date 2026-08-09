@@ -32,8 +32,11 @@ import { createWindowAuthManagerService } from './services/airi/auth'
 import { setupServerChannel } from './services/airi/channel-server'
 import { setupGodotStageManager } from './services/airi/godot-stage'
 import { setupBuiltInServer } from './services/airi/http-server'
+import { setupLiveChatService } from './services/airi/live-chat'
 import { setupMcpStdioManager } from './services/airi/mcp-servers'
+import { createMprisProvider, setupNowPlayingEngine } from './services/airi/now-playing'
 import { setupExtensionHost } from './services/airi/plugins'
+import { setupUniBarrageManager } from './services/airi/unibarrage'
 import { setupArtistryBridge } from './services/airi/widgets/artistry-bridge'
 import { setupAutoUpdater } from './services/electron/auto-updater'
 import { setupGlobalShortcutService } from './services/electron/global-shortcut'
@@ -43,9 +46,11 @@ import { setupAboutWindowReusable } from './windows/about'
 import { setupBeatSync } from './windows/beat-sync'
 import { setupCaptionWindowManager } from './windows/caption'
 import { setupChatWindowReusableFunc } from './windows/chat'
+import { setupDanmakuWindowManager } from './windows/danmaku'
 import { isDesktopOverlayEnabled, setupDesktopOverlayWindow } from './windows/desktop-overlay'
 import { setupDevtoolsWindow } from './windows/devtools'
 import { setupEditorWindowManager } from './windows/editor'
+import { setupLyricsWindowManager } from './windows/lyrics'
 import { setupMainWindow } from './windows/main'
 import { setupNoticeWindowManager } from './windows/notice'
 import { setupOnboardingWindowManager } from './windows/onboarding'
@@ -187,6 +192,23 @@ app.whenReady().then(async () => {
   // BeatSync will create a background window to capture and process audio.
   const beatSync = injeca.provide('windows:beat-sync', () => setupBeatSync())
 
+  // Now-playing lyrics: MPRIS is Linux-only, so other platforms keep a no-op
+  // provider while the renderer plumbing stays identical.
+  const nowPlaying = injeca.provide('modules:now-playing', {
+    build: () => setupNowPlayingEngine({ provider: isLinux ? createMprisProvider() : null }),
+  })
+
+  // Bundled UniBarrage danmaku proxy sidecar; the live-chat connector dials it.
+  const unibarrage = injeca.provide('modules:unibarrage', {
+    build: () => setupUniBarrageManager(),
+  })
+
+  // In-app live-room connector (Bilibili + Douyin via the managed UniBarrage).
+  const liveChat = injeca.provide('modules:live-chat', {
+    dependsOn: { unibarrage },
+    build: ({ dependsOn }) => setupLiveChatService({ getBridge: () => dependsOn.unibarrage.getBridge() }),
+  })
+
   const devtoolsMarkdownStressWindow = injeca.provide('windows:devtools:markdown-stress', () => setupDevtoolsWindow())
 
   const onboardingWindowManager = injeca.provide('windows:onboarding', {
@@ -220,7 +242,7 @@ app.whenReady().then(async () => {
   })
 
   const settingsWindow = injeca.provide('windows:settings', {
-    dependsOn: { widgetsManager, beatSync, autoUpdater, devtoolsWindow: devtoolsMarkdownStressWindow, serverChannel, godotStageManager, mcpStdioManager, i18n, windowAuthManager, globalShortcut, spotlightWindow },
+    dependsOn: { widgetsManager, beatSync, autoUpdater, devtoolsWindow: devtoolsMarkdownStressWindow, serverChannel, godotStageManager, mcpStdioManager, i18n, windowAuthManager, globalShortcut, spotlightWindow, nowPlaying, liveChat, unibarrageManager: unibarrage },
     build: async ({ dependsOn }) =>
       setupSettingsWindowReusableFunc({
         ...dependsOn,
@@ -229,7 +251,7 @@ app.whenReady().then(async () => {
   })
 
   const mainWindow = injeca.provide('windows:main', {
-    dependsOn: { editorWindow, settingsWindow, chatWindow, widgetsManager, noticeWindow, beatSync, autoUpdater, serverChannel, godotStageManager, mcpStdioManager, i18n, onboardingWindowManager, windowAuthManager },
+    dependsOn: { editorWindow, settingsWindow, chatWindow, widgetsManager, noticeWindow, beatSync, autoUpdater, serverChannel, godotStageManager, mcpStdioManager, i18n, onboardingWindowManager, windowAuthManager, nowPlaying, liveChat, unibarrageManager: unibarrage },
     build: async ({ dependsOn }) => setupMainWindow({
       ...dependsOn,
       onWindowCreated: (window) => {
@@ -239,12 +261,22 @@ app.whenReady().then(async () => {
   })
 
   const captionWindow = injeca.provide('windows:caption', {
-    dependsOn: { mainWindow, serverChannel, i18n },
+    dependsOn: { mainWindow, serverChannel, i18n, nowPlaying },
     build: async ({ dependsOn }) => setupCaptionWindowManager(dependsOn),
   })
 
+  const danmakuWindow = injeca.provide('windows:danmaku', {
+    dependsOn: { serverChannel, i18n },
+    build: ({ dependsOn }) => setupDanmakuWindowManager(dependsOn),
+  })
+
+  const lyricsWindow = injeca.provide('windows:lyrics', {
+    dependsOn: { serverChannel, i18n, nowPlaying },
+    build: ({ dependsOn }) => setupLyricsWindowManager(dependsOn),
+  })
+
   const tray = injeca.provide('app:tray', {
-    dependsOn: { mainWindow, settingsWindow, captionWindow, widgetsWindow: widgetsManager, serverChannel, beatSyncBgWindow: beatSync, aboutWindow, i18n },
+    dependsOn: { mainWindow, settingsWindow, captionWindow, danmakuWindow, lyricsWindow, widgetsWindow: widgetsManager, serverChannel, beatSyncBgWindow: beatSync, aboutWindow, i18n },
     build: async ({ dependsOn }) => setupTray(dependsOn),
   })
 
@@ -273,6 +305,40 @@ app.whenReady().then(async () => {
         context,
         artistryConfig: deps.artistryConfig,
       })
+    },
+  })
+
+  // NOTICE: Separate invoke ensures the now-playing engine is eagerly started.
+  // The engine only gets built as a window dependency, and building does not
+  // begin watching MPRIS — that requires an explicit start.
+  injeca.invoke({
+    dependsOn: { nowPlaying },
+    callback: ({ nowPlaying: engine }) => {
+      engine.start()
+    },
+  })
+
+  // NOTICE: Separate invoke ensures the bundled UniBarrage sidecar is spawned
+  // and ready before the live-chat connector starts dialing rooms. injeca awaits
+  // invoke callbacks in registration order, so this waits only for the bridge
+  // API to answer (bounded by the manager's readiness timeout).
+  injeca.invoke({
+    dependsOn: { unibarrage },
+    callback: async ({ unibarrage: manager }) => {
+      try {
+        await manager.start()
+      }
+      catch (error) {
+        log.withError(error).error('failed to start UniBarrage sidecar')
+      }
+    },
+  })
+
+  // Same for live-chat: the connector only dials rooms after start().
+  injeca.invoke({
+    dependsOn: { liveChat },
+    callback: ({ liveChat: service }) => {
+      service.start()
     },
   })
 

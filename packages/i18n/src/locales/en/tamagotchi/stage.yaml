@@ -103,3 +103,8 @@ about:
       title: Update Available
       description: A new version (v{version}) is available.
       no-release-notes-markdown: _No release notes provided._
+
+now-playing:
+  searching: Searching for lyrics…
+  no_lyrics: No lyrics available
+  paused: Paused

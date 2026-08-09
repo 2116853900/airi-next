@@ -606,6 +606,20 @@ export interface WebSocketEventInputTextVoiceBase {
   contextUpdates?: InputContextUpdate[]
 }
 
+/** A message received from a live-room chat provider. */
+export interface WebSocketEventInputLiveChat {
+  platform: 'bilibili' | 'douyin'
+  roomId: number
+  messageId: string
+  username: string
+  text: string
+  avatar?: string
+  color?: string
+  /** User level on the platform (e.g. Douyin user level, Bilibili fans badge level). */
+  level?: number
+  timestamp?: number
+}
+
 export type WebSocketEventInputTextVoice = WebSocketEventInputTextVoiceBase & Partial<WithInputSource<'stage-web' | 'stage-tamagotchi' | 'discord'>>
 
 export interface WebSocketEventInputVoiceBase {
@@ -622,6 +636,7 @@ export type InputEventEnvelope
   = | { type: 'input:text', data: WebSocketEventInputText }
     | { type: 'input:text:voice', data: WebSocketEventInputTextVoice }
     | { type: 'input:voice', data: WebSocketEventInputVoice }
+    | { type: 'input:live-chat', data: WebSocketEventInputLiveChat }
 
 export interface EventBaseMetadata {
   source?: ModuleIdentity
@@ -1266,6 +1281,15 @@ export const inputVoice = defineProtocolEventa<WebSocketEventInputVoice>('input:
     },
   },
 })
+export const inputLiveChat = defineProtocolEventa<WebSocketEventInputLiveChat>('input:live-chat', {
+  metadata: {
+    delivery: {
+      mode: 'consumer-group',
+      group: 'live-chat-overlay',
+      selection: 'first',
+    },
+  },
+})
 
 export const outputGenAiChatToolCall = defineProtocolEventa<OutputGenAiChatToolCallEvent>('output:gen-ai:chat:tool-call')
 export const outputGenAiChatMessage = defineProtocolEventa<OutputGenAiChatMessageEvent>('output:gen-ai:chat:message')
@@ -1282,6 +1306,7 @@ export const protocolEventMetadataByType = {
   [inputText.id]: inputText.metadata,
   [inputTextVoice.id]: inputTextVoice.metadata,
   [inputVoice.id]: inputVoice.metadata,
+  [inputLiveChat.id]: inputLiveChat.metadata,
 } satisfies Partial<Record<keyof ProtocolEvents, ProtocolEventaMetadata | undefined>>
 
 export function getProtocolEventMetadata(eventType: keyof ProtocolEvents | string) {
@@ -1453,6 +1478,7 @@ export interface ProtocolEvents<C = undefined> {
   'input:text': WebSocketEventInputText
   'input:text:voice': WebSocketEventInputTextVoice
   'input:voice': WebSocketEventInputVoice
+  'input:live-chat': WebSocketEventInputLiveChat
 
   'output:gen-ai:chat:tool-call': OutputGenAiChatToolCallEvent
   'output:gen-ai:chat:message': OutputGenAiChatMessageEvent

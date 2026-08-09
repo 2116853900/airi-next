@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@date-fns/utc": "catalog:",
+    "@deltachat/dbus-next": "catalog:",
     "@fontsource-variable/comfortaa": "catalog:",
     "@fontsource-variable/dm-sans": "catalog:",
     "@fontsource-variable/jura": "catalog:",

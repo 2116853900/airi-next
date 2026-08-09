@@ -11,6 +11,9 @@ packages:
   - apps/**
   - server/**
   - '!**/dist/**'
+  # UniBarrage embeds Node.js clients for Douyu/Huya via `//go:embed`; their
+  # package.json files are not workspace packages.
+  - '!engines/stage-tamagotchi-unibarrage/**/client'
 
 overrides:
   '@better-auth/oauth-provider>@better-auth/core': 1.6.5
@@ -49,6 +52,7 @@ catalog:
   '@capacitor/ios': ^8.3.1
   '@capacitor/local-notifications': ^8.0.2
   '@date-fns/utc': ^2.1.1
+  '@deltachat/dbus-next': ^1.0.1
   '@discordjs/voice': ^0.19.2
   '@dotenvx/dotenvx': ^1.61.1
   '@electric-sql/pglite': ^0.4.4

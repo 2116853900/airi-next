@@ -1,0 +1,6 @@
+# Build output
+out/
+
+# Node.js (pnpm may touch the embedded Douyu/Huya client dirs)
+node_modules/
+**/node_modules/

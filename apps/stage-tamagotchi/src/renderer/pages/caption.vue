@@ -1,15 +1,15 @@
 <script setup lang="ts">
+import type { CaptionChannelEvent } from '@proj-airi/stage-shared'
+
 import { defineInvoke } from '@moeru/eventa'
 import { useElectronEventaContext, useElectronMouseAroundWindowBorder, useElectronMouseInWindow } from '@proj-airi/electron-vueuse'
+import { CAPTION_OVERLAY_CHANNEL } from '@proj-airi/stage-shared'
 import { createFadeAnimator, PoppinText } from '@proj-airi/stage-ui/components'
 import { refDebounced, useBroadcastChannel } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { captionGetIsFollowingWindow, captionIsFollowingWindowChanged } from '../../shared/eventa'
 import { useCaptionItems } from '../composables/useCaptionItems'
-
-/** Keep stale captions from lingering after the last broadcast update. */
-const CAPTION_TEXT_EXPIRY_MS = 10_000
 
 const attached = ref(true)
 
@@ -21,24 +21,25 @@ const { isNearAnyBorder: isAroundWindowBorder } = useElectronMouseAroundWindowBo
 const isAroundWindowBorderFor250Ms = refDebounced(isAroundWindowBorder, 250)
 
 // Broadcast channel for captions
-type CaptionChannelEvent = | { type: 'caption-speaker', text: string } | { type: 'caption-assistant', text: string }
-const { data } = useBroadcastChannel<CaptionChannelEvent, CaptionChannelEvent>({ name: 'airi-caption-overlay' })
-const { items: captionItems, add: addCaptionItem, dispose: disposeCaptionItems } = useCaptionItems({ ttlMs: CAPTION_TEXT_EXPIRY_MS })
+const { data } = useBroadcastChannel<CaptionChannelEvent, CaptionChannelEvent>({ name: CAPTION_OVERLAY_CHANNEL })
+const { items: captionItems, add: addCaptionItem, dispose: disposeCaptionItems } = useCaptionItems()
 
 const context = useElectronEventaContext()
 const getAttached = defineInvoke(context.value, captionGetIsFollowingWindow)
 
+type SpeechCaptionType = Exclude<CaptionChannelEvent['type'], 'caption-live-chat'>
+
 const captionAnimatorByType = {
   'caption-speaker': createFadeAnimator({ duration: 180 }),
   'caption-assistant': createFadeAnimator({ duration: 180 }),
-} satisfies Record<CaptionChannelEvent['type'], ReturnType<typeof createFadeAnimator>>
+} satisfies Record<SpeechCaptionType, ReturnType<typeof createFadeAnimator>>
 
 const captionTypes = [
   'caption-speaker',
   'caption-assistant',
-] satisfies CaptionChannelEvent['type'][]
+] satisfies SpeechCaptionType[]
 
-function toCaptionTextSegments(type: CaptionChannelEvent['type']) {
+function toCaptionTextSegments(type: SpeechCaptionType) {
   return captionItems.value
     .filter(item => item.type === type)
     .map((item, index) => ({
@@ -53,11 +54,11 @@ const captionTextByType = computed(() => ({
 }))
 
 onMounted(async () => {
-  try {
-    const isAttached = await getAttached()
-    attached.value = Boolean(isAttached)
-  }
-  catch {}
+  watch(data, (event) => {
+    if (!event)
+      return
+    addCaptionItem(event)
+  }, { immediate: true })
 
   try {
     context.value.on(captionIsFollowingWindowChanged, (event) => {
@@ -67,17 +68,8 @@ onMounted(async () => {
   catch {}
 
   try {
-    // Update texts from broadcast channel
-    watch(data, (event) => {
-      if (!event)
-        return
-      if (event.type === 'caption-speaker') {
-        addCaptionItem(event)
-      }
-      else if (event.type === 'caption-assistant') {
-        addCaptionItem(event)
-      }
-    }, { immediate: true })
+    const isAttached = await getAttached()
+    attached.value = Boolean(isAttached)
   }
   catch {}
 })
@@ -92,7 +84,7 @@ onUnmounted(() => {
     <div
       :class="[
         shouldFadeOnCursorWithin ? 'op-0' : 'op-100',
-        'pointer-events-auto relative select-none rounded-xl px-3 py-2',
+        'pointer-events-auto relative select-none rounded-xl px-3 pb-6 pt-2',
         'transition-opacity duration-250 ease-in-out',
       ]"
     >
@@ -104,7 +96,7 @@ onUnmounted(() => {
         <div class="absolute left-1/2 top-1/2 h-[3px] w-4 rounded-full bg-[rgba(255,255,255,0.85)] -translate-x-1/2 -translate-y-1/2" />
       </div>
 
-      <div class="max-w-[80vw] flex flex-col gap-1">
+      <div :class="['max-w-[80vw] flex flex-col gap-2']">
         <div
           v-for="type in captionTypes"
           v-show="captionTextByType[type].length > 0"

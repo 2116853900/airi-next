@@ -4,6 +4,7 @@ import {
   extensionAnnounce,
   extensionKitAnnounce,
   extensionModuleAnnounce,
+  inputLiveChat,
   peerAuthenticate,
 } from './events'
 
@@ -19,5 +20,14 @@ describe('extension runtime protocol events', () => {
 
   it('defines kit availability events under extension kit namespace', () => {
     expect(extensionKitAnnounce.id).toBe('extension:kit:announce')
+  })
+
+  it('routes live chat messages to one overlay consumer', () => {
+    expect(inputLiveChat.id).toBe('input:live-chat')
+    expect(inputLiveChat.metadata?.delivery).toEqual({
+      mode: 'consumer-group',
+      group: 'live-chat-overlay',
+      selection: 'first',
+    })
   })
 })

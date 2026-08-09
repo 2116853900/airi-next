@@ -22,6 +22,10 @@ menu:
       caption_overlay: Caption Overlay
       follow_window: Follow window
       reset_position: Reset position
+      open_danmaku: Open Danmaku...
+      close_danmaku: Close Danmaku
+      open_lyrics: Open Lyrics...
+      close_lyrics: Close Lyrics
       devtools: DevTools
       troubleshoot_beatsync: Troubleshoot BeatSync...
       quit: Quit

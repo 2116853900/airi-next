@@ -515,6 +515,34 @@ pages:
             warmup:
               description: 在检测节拍之前进行预热，以提高准确性
               label: 预热
+    now_playing:
+      title: 正在播放
+      description: 在歌词浮窗上显示当前正在播放的歌曲与同步歌词
+      sections:
+        behavior:
+          title: 行为
+          enabled:
+            label: 启用正在播放
+            description: 通过 MPRIS 检测本机正在播放的歌曲（仅限 Linux）。
+          auto_beat_sync:
+            label: 自动开启节拍律动
+            description: 检测到歌曲播放时让角色跟随节拍舞动。
+        lyrics_source:
+          title: 歌词来源
+          description: 优先使用 LRCLIB，中文歌曲兜底使用网易云。
+          options:
+            lrclib: 仅 LRCLIB
+            lrclib_netease: LRCLIB + 网易云
+          show_on_overlay:
+            label: 在歌词浮窗上显示歌词
+        status:
+          title: 状态
+          no_player: 未检测到播放器
+          refresh: 刷新歌词
+          desktop_only: 正在播放仅在桌面版中可用。
+          source_none: 无歌词
+          source_lrclib: LRCLIB
+          source_netease: 网易云
     artistry:
       title: 绘图
       description: 图像生成、场景背景和绘图。
@@ -842,6 +870,114 @@ pages:
         opened: 已经在文件管理器里打开 {path} 啦
         json-applied: JSON 已经解析完成了，点「保存并重启」就写到磁盘上啦。
         restarted: 重启好啦！启动了 {started} 个，失败 {failed} 个，跳过 {skipped} 个
+    live_chat:
+      title: 直播弹幕
+      description: 在桌面弹幕浮窗上显示直播间弹幕
+      sections:
+        display:
+          title: 显示
+          description: 调整直播间弹幕在弹幕浮窗上的显示效果。
+          show_on_overlay:
+            label: 在弹幕浮窗上显示直播弹幕
+            description: 在桌面弹幕浮窗上显示收到的直播间弹幕。
+          dedupe:
+            enabled:
+              label: 过滤重复弹幕
+              description: 同一弹幕文本在窗口内重复出现过多时隐藏。
+            window:
+              label: 重复窗口
+              description: 统计同一弹幕文本重复出现次数的时间窗口。
+            max_repeats:
+              label: 最大出现次数
+              description: 同一弹幕文本在窗口内出现的最大次数，超过后隐藏。
+          max_items:
+            label: 同时显示的条数
+            description: 同时保留在画面上的弹幕数量。
+          ttl:
+            label: 保留时长
+            description: 一条弹幕在消失前停留的时间。
+          font_size:
+            label: 字号
+          opacity:
+            label: 背景不透明度
+        theme:
+          title: 主题
+          description: 自定义弹幕浮窗的外观。
+          bg_opacity:
+            label: 背景不透明度
+            description: 弹幕浮窗背景的透明度。
+          text_color:
+            label: 文字颜色
+            description: 弹幕文字颜色的十六进制值（例如 # f5f5f5）。
+          msg_bg_color:
+            label: 弹幕背景颜色
+            description: 每条弹幕的背景颜色。
+          msg_bg_opacity:
+            label: 弹幕背景不透明度
+            description: 每条弹幕背景的透明度。
+          show_level:
+            label: 显示用户等级
+            description: 在用户名旁边显示用户等级徽章。
+          level_colors:
+            title: 按等级定制文字颜色
+            description: 为特定用户等级设置不同的文字颜色。
+            level_placeholder: 等级
+            add: 添加等级颜色
+        ai_reply:
+          title: AI 回复
+          description: 让角色以语音回复符合条件的弹幕。
+          enabled:
+            label: 启用 AI 回复
+            description: 当弹幕符合条件时，角色以语音回复。
+          trigger:
+            options:
+              mention: 仅在提到时回复
+              all: 回复每一条弹幕
+          trigger_keywords:
+            label: 额外触发关键词
+            description: 用逗号分隔的关键词（除角色名外），命中即视为提到角色。
+            placeholder: 例如：空降, 主播
+          cooldown:
+            label: 回复冷却时间
+            description: 两条 AI 回复之间的最小间隔。
+          include_sender:
+            label: 包含发送者昵称
+            description: 在回复上下文中带上弹幕发送者昵称。
+          max_length:
+            label: 弹幕最大长度
+            description: 超过该字数的弹幕会被忽略。
+    live_room:
+      title: 直播间
+      description: 连接 B 站和抖音直播间
+      desktop_only: 直播间仅支持桌面版应用。
+      rooms:
+        title: 房间
+        description: 添加要监听的直播间。B 站和抖音都通过内置的 UniBarrage 引擎连接。
+        empty: 还没有直播间，在下面添加一个吧。
+        remove: 移除
+        state:
+          idle: 未连接
+          connecting: 连接中…
+          connected: 已连接
+          error: 出错
+          stopped: 已停止
+        add:
+          room_id: 房间号
+          room_id_placeholder: 例如 6 或 123456
+          action: 添加房间
+          error:
+            required: 房间号不能为空。
+            failed: 添加房间失败。
+      unibarrage:
+        title: 内置弹幕引擎（UniBarrage）
+        description: 应用内置 UniBarrage 并在启动时自动运行，用于连接 B 站和抖音直播间。
+        state:
+          stopped: 已停止
+          starting: 启动中…
+          running: 运行中
+          error: 出错
+        ports: 'ws {ws} · api {api}'
+        error_hint: 详见应用日志。
   flux:
     title: Flux
     buy: 充值

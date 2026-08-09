@@ -50,3 +50,4 @@ export type WebSocketEventInputs
   = | WebSocketEventOf<'input:text'>
     | WebSocketEventOf<'input:text:voice'>
     | WebSocketEventOf<'input:voice'>
+    | WebSocketEventOf<'input:live-chat'>

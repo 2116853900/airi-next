@@ -152,6 +152,29 @@ jobs:
           use-dotnet: true
           include-templates: true
 
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.24.x'
+
+      - name: Build UniBarrage (Windows)
+        if: matrix.os == 'windows-latest'
+        working-directory: ./engines/stage-tamagotchi-unibarrage
+        shell: bash
+        run: node ./scripts/build.mjs --os win --arch ${{ matrix.arch }}
+
+      - name: Build UniBarrage (macOS)
+        if: matrix.os == 'macos-15-intel' || matrix.os == 'macos-26'
+        working-directory: ./engines/stage-tamagotchi-unibarrage
+        shell: bash
+        run: node ./scripts/build.mjs --os mac --arch ${{ matrix.arch }}
+
+      - name: Build UniBarrage (Linux)
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm'
+        working-directory: ./engines/stage-tamagotchi-unibarrage
+        shell: bash
+        run: node ./scripts/build.mjs --os linux --arch ${{ matrix.arch }}
+
       - name: Export Godot Stage (Windows)
         if: matrix.os == 'windows-latest'
         working-directory: ./engines/stage-tamagotchi-godot
