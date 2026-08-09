@@ -3,21 +3,22 @@ import type { WebSocketEventInputLiveChat } from '@proj-airi/server-sdk'
 import { errorMessageFrom } from '@moeru/std'
 import { evaluateLiveChatReply } from '@proj-airi/stage-shared/live-chat'
 import { useCharacterStore } from '@proj-airi/stage-ui/stores/character'
+import { useChatStore } from '@proj-airi/stage-ui/stores/chat'
+import { useChatSessionStore } from '@proj-airi/stage-ui/stores/chat/session-store'
 import { useConsciousnessStore } from '@proj-airi/stage-ui/stores/modules/consciousness'
 import { useSettingsLiveChat } from '@proj-airi/stage-ui/stores/settings'
 import { storeToRefs } from 'pinia'
 
-import { useChatSyncStore } from '../stores/chat-sync'
-
 /**
- * Wires live-room danmaku into the chat-sync authority so the character can
- * reply with voice. The main window owns this: it is the chat authority and
- * hosts the speech pipeline.
+ * Wires live-room danmaku into the chat store so the character can reply with
+ * voice. The main window owns this: it is the chat authority and hosts the
+ * speech pipeline.
  */
 export function useLiveChatAiReply() {
   const settings = useSettingsLiveChat()
   const characterStore = useCharacterStore()
-  const chatSync = useChatSyncStore()
+  const chatStore = useChatStore()
+  const chatSession = useChatSessionStore()
   const consciousnessStore = useConsciousnessStore()
   const { activeProvider, activeModel } = storeToRefs(consciousnessStore)
   const {
@@ -77,7 +78,8 @@ export function useLiveChatAiReply() {
     lastReplyAt = now
 
     try {
-      await chatSync.requestIngest({
+      await chatStore.send({
+        sessionId: chatSession.activeSessionId,
         text: decision.text,
         input: { type: 'input:live-chat', data: message },
       })
