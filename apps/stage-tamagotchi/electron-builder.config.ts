@@ -108,6 +108,15 @@ export default {
       to: 'unibarrage',
       filter: ['**/*'],
     },
+    {
+      from: '../../engines/stage-tamagotchi-music-dl/out/${os}',
+      to: 'music-dl',
+      filter: ['**/*'],
+    },
+    {
+      from: '../../engines/stage-tamagotchi-music-dl/LICENSE',
+      to: 'music-dl/LICENSE',
+    },
   ],
   extraMetadata: {
     name: 'ai.moeru.airi',

@@ -106,6 +106,29 @@ jobs:
           use-dotnet: true
           include-templates: true
 
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.x'
+
+      - name: Build song request engine for Windows
+        if: matrix.depot == 'windows'
+        working-directory: ./engines/stage-tamagotchi-music-dl
+        shell: bash
+        run: node ./scripts/build.mjs --os win --arch ${{ matrix.arch }}
+
+      - name: Build song request engine for macOS
+        if: matrix.depot == 'macos'
+        working-directory: ./engines/stage-tamagotchi-music-dl
+        shell: bash
+        run: node ./scripts/build.mjs --os mac --arch ${{ matrix.arch }}
+
+      - name: Build song request engine for Linux
+        if: matrix.depot == 'linux'
+        working-directory: ./engines/stage-tamagotchi-music-dl
+        shell: bash
+        run: node ./scripts/build.mjs --os linux --arch ${{ matrix.arch }}
+
       - name: Export Godot Stage for Windows
         if: matrix.depot == 'windows'
         working-directory: ./engines/stage-tamagotchi-godot

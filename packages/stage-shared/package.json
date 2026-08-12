@@ -22,6 +22,7 @@
     "./godot-stage": "./src/godot-stage/index.ts",
     "./live-chat": "./src/live-chat/index.ts",
     "./now-playing": "./src/now-playing/index.ts",
+    "./song-request": "./src/song-request/index.ts",
     "./server-channel-qr": "./src/server-channel-qr.ts",
     "./electron-renderer": "./src/electron-renderer.d.ts",
     "./composables": "./src/composables/index.ts",

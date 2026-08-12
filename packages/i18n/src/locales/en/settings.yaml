@@ -553,10 +553,10 @@ pages:
             description: Let the character dance when a song starts playing.
         lyrics_source:
           title: Lyrics source
-          description: LRCLIB first, with NetEase as fallback for Chinese songs.
+          description: LRCLIB first, with NetEase and KuGou as fallbacks for Chinese songs.
           options:
             lrclib: LRCLIB only
-            lrclib_netease: LRCLIB + NetEase
+            lrclib_netease: LRCLIB + NetEase/KuGou
           show_on_overlay:
             label: Show lyrics on the lyrics overlay
         status:
@@ -567,6 +567,7 @@ pages:
           source_none: no lyrics
           source_lrclib: LRCLIB
           source_netease: NetEase
+          source_kugou: KuGou
     artistry:
       title: Artistry
       description: Image generation, scene background and drawing.
@@ -797,6 +798,82 @@ pages:
     vision:
       description: Vision
       title: Vision
+    watch_along:
+      title: Watch Along
+      description: Watch a video together and let the character react with voice
+      sections:
+        behavior:
+          title: Behavior
+          enabled:
+            label: Enable watch along
+            description: Capture the selected screen or window so the character can watch the video with you.
+          auto_start:
+            label: Start automatically
+            description: Watch by itself when a window title matches the keywords, in a browser or a desktop client.
+          auto_start_keywords:
+            label: Auto start keywords
+            description: Comma-separated words matched against window titles.
+            placeholder: 哔哩哔哩,bilibili,抖音,douyin
+          summarizer_mode:
+            label: Summary model
+            description: Which model condenses the video before the character speaks.
+            options:
+              vision: Vision model
+              consciousness: Consciousness model
+          comment_cooldown:
+            label: Comment cooldown
+            description: Minimum time between two spoken comments.
+        pace:
+          title: Pace
+          capture_interval:
+            label: Capture interval
+            description: How often the character looks at the video.
+          periodic_summary:
+            label: Periodic summary
+            description: Speak a summary of the video at a fixed interval.
+          summary_interval:
+            label: Summary interval
+            description: How much time one spoken summary covers.
+          scene_change:
+            label: React to scene changes
+            description: Comment right away when the picture changes a lot.
+          scene_change_sensitivity:
+            label: Scene change sensitivity
+            description: Higher sensitivity reacts to smaller changes.
+            options:
+              low: Low
+              medium: Medium
+              high: High
+        model:
+          title: Vision model
+          description: Watch along observes the video with the model from the Vision module.
+          configured: Using {model}
+          not_configured: No vision model is configured yet.
+          configure: Configure vision
+        source:
+          title: Video source
+          description: Pick the screen or window that plays the video.
+          selected: 'Selected: {name}'
+          none_selected: No source selected yet.
+          categories:
+            displays: Displays
+            applications: Applications
+          refetch: Refresh
+          loading: Loading sources...
+          empty: No sources found for this category.
+          permission_required: Screen capture permission is required to pick a video source.
+          open_preferences: Open system preferences
+        status:
+          title: Status
+          states:
+            idle: Not watching
+            starting: Starting...
+            watching: Watching
+            error: Stopped with an error
+          watching_source: 'Watching: {name}'
+          observations: '{count} observations'
+          comments: '{count} comments'
+          last_comment_at: 'Last comment: {time}'
     x:
       description: X / Twitter browsing and usage
       title: X / Twitter
@@ -983,6 +1060,79 @@ pages:
           max_length:
             label: Max message length
             description: Danmaku longer than this many characters is ignored.
+        song_request:
+          title: Song Requests
+          description: Play songs requested with a danmaku that starts with "点歌".
+          desktop_only: Song requests are only available in the desktop app.
+          enabled:
+            label: Enable song requests
+            description: Accept song requests from live chat and play them in receive order.
+          volume:
+            label: Playback volume
+            description: Set the volume for requested songs.
+          queue_limit:
+            label: Queue limit
+            description: Set the maximum number of requests, including the song that is playing.
+          user_cooldown:
+            label: Viewer cooldown
+            description: Set the minimum time between accepted requests from one viewer.
+          status:
+            current: Current request
+            next: Next request
+            empty: No request
+            phase:
+              queued: Queued
+              resolving: Searching
+              playing: Playing
+          test:
+            title: Test a song request
+            description: Add a song to the same queue that live-chat requests use.
+            label: Song name
+            placeholder: e.g. 稻香 周杰伦
+            submit: Add test request
+            invalid: Enter a song name with 100 characters or fewer.
+            unavailable: Open the main Stage window before you test a song request.
+            disabled: Enable song requests before you add a test request.
+            disposed: The song request player is not available.
+            full: The song request queue is full.
+            cooldown: Wait before you add another test request.
+          messages:
+            accepted: 'Added "{query}" to the song queue at position {position}.'
+            cooldown: This viewer must wait before they request another song.
+            now_playing: 'Now playing: {title} - {artist}'
+            playback_failed: 'Could not play "{title}": {error}'
+            playback_failed_short: Could not resume the requested song.
+            queue_full: The song request queue is full.
+            resolve_failed: 'Could not find a playable result for "{query}": {error}'
+            stream_failed: The audio stream stopped with an error.
+            unknown_error: Unknown error
+          accounts:
+            title: Music source accounts
+            description: Scan to sign in with a VIP account for better songs and quality. The sign-in cookie stays on this device. Sign-in uses unofficial endpoints; use at your own risk.
+            logged_in: Signed in
+            logged_out: Not signed in
+            login: Scan to sign in
+            login_wx: WeChat scan
+            logout: Sign out
+            retry: Get a new QR code
+            cancel: Close
+            qr_alt: Sign-in QR code
+            status:
+              waiting: Scan the QR code with the source's mobile app.
+              scanned: Scanned. Confirm the sign-in on your phone.
+              success: Signed in.
+              expired: The QR code expired. Get a new one.
+              failed: The sign-in failed.
+            messages:
+              success: Signed in. Song requests now use this account.
+              signed_out: Signed out.
+              create_failed: Could not create the login QR code.
+              sign_out_failed: Could not sign out.
+            sources:
+              netease: NetEase Cloud Music
+              qq: QQ Music
+              kugou: KuGou Music
+              bilibili: Bilibili
     live_room:
       title: Live Room
       description: Connect to Bilibili and Douyin live rooms

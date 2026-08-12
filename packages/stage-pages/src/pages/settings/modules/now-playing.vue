@@ -38,6 +38,13 @@ let removeStateListener: (() => void) | undefined
 let setEnabled: ((value: boolean) => Promise<void>) | undefined
 let refreshLyrics: (() => Promise<void>) | undefined
 
+const lyricsSourceLabelKeys: Record<NowPlayingState['lyricsSource'], string> = {
+  lrclib: 'settings.pages.modules.now_playing.sections.status.source_lrclib',
+  netease: 'settings.pages.modules.now_playing.sections.status.source_netease',
+  kugou: 'settings.pages.modules.now_playing.sections.status.source_kugou',
+  none: 'settings.pages.modules.now_playing.sections.status.source_none',
+}
+
 const statusText = computed(() => {
   const snapshot = state.value
   if (!snapshot?.track)
@@ -45,11 +52,7 @@ const statusText = computed(() => {
   const trackLabel = snapshot.track.artist
     ? `${snapshot.track.title} · ${snapshot.track.artist}`
     : snapshot.track.title
-  const sourceLabel = snapshot.lyricsSource === 'netease'
-    ? t('settings.pages.modules.now_playing.sections.status.source_netease')
-    : snapshot.lyricsSource === 'lrclib'
-      ? t('settings.pages.modules.now_playing.sections.status.source_lrclib')
-      : t('settings.pages.modules.now_playing.sections.status.source_none')
+  const sourceLabel = t(lyricsSourceLabelKeys[snapshot.lyricsSource])
   return `${trackLabel} — ${snapshot.status} (${sourceLabel})`
 })
 

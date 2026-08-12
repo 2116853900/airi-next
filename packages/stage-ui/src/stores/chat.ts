@@ -22,7 +22,7 @@ import {
   AIRI_CHAT_SESSION_ID_HEADER,
 } from '../libs/analytics-headers'
 import { extractMessageText, isCloudSyncableMessage } from '../libs/chat-sync'
-import { createMinecraftContext } from './chat/context-providers'
+import { createMinecraftContext, createWatchAlongContext } from './chat/context-providers'
 import { useChatContextStore } from './chat/context-store'
 import { useChatSessionStore } from './chat/session-store'
 import { useChatStreamStore } from './chat/stream-store'
@@ -283,6 +283,7 @@ export const useChatStore = defineStore('chat', () => {
     getSystemPromptSupplement: () => llmToolsetPromptsStore.activeToolsetPrompt,
     runtimeContextProviders: [
       createMinecraftContext,
+      createWatchAlongContext,
     ],
     createId: nanoid,
     unwrapMessage: message => toRaw(message),

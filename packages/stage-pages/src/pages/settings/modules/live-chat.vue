@@ -5,6 +5,8 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import SongRequestSettings from './components/song-request-settings.vue'
+
 const { t } = useI18n()
 const settings = useSettingsLiveChat()
 const {
@@ -304,6 +306,8 @@ function removeLevelColorEntry(index: number) {
         :format-value="value => `${value.toFixed(0)}`"
       />
     </div>
+
+    <SongRequestSettings />
   </div>
 </template>
 

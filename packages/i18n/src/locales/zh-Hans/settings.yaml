@@ -529,10 +529,10 @@ pages:
             description: 检测到歌曲播放时让角色跟随节拍舞动。
         lyrics_source:
           title: 歌词来源
-          description: 优先使用 LRCLIB，中文歌曲兜底使用网易云。
+          description: 优先使用 LRCLIB，中文歌曲兜底使用网易云与酷狗。
           options:
             lrclib: 仅 LRCLIB
-            lrclib_netease: LRCLIB + 网易云
+            lrclib_netease: LRCLIB + 网易云/酷狗
           show_on_overlay:
             label: 在歌词浮窗上显示歌词
         status:
@@ -543,6 +543,7 @@ pages:
           source_none: 无歌词
           source_lrclib: LRCLIB
           source_netease: 网易云
+          source_kugou: 酷狗
     artistry:
       title: 绘图
       description: 图像生成、场景背景和绘图。
@@ -760,6 +761,82 @@ pages:
     vision:
       description: 视觉
       title: 视觉
+    watch_along:
+      title: 陪看视频
+      description: 和角色一起看视频，让她用语音评论看到的内容
+      sections:
+        behavior:
+          title: 行为
+          enabled:
+            label: 启用陪看
+            description: 捕获选定的屏幕或窗口，让角色和你一起看视频。
+          auto_start:
+            label: 自动开启陪看
+            description: 检测到标题匹配关键词的窗口时自动开始陪看，浏览器页面和桌面客户端都支持。
+          auto_start_keywords:
+            label: 匹配关键词
+            description: 用逗号分隔，与窗口标题匹配。
+            placeholder: 哔哩哔哩,bilibili,抖音,douyin
+          summarizer_mode:
+            label: 总结模型
+            description: 角色发言前由哪个模型来浓缩视频内容。
+            options:
+              vision: 视觉模型
+              consciousness: 意识模型
+          comment_cooldown:
+            label: 评论冷却
+            description: 两次语音评论之间的最短间隔。
+        pace:
+          title: 节奏
+          capture_interval:
+            label: 观察间隔
+            description: 角色多久看一次视频画面。
+          periodic_summary:
+            label: 定时总结
+            description: 每隔固定时间用语音总结一次视频内容。
+          summary_interval:
+            label: 总结间隔
+            description: 每次语音总结覆盖多长时间的内容。
+          scene_change:
+            label: 响应画面变化
+            description: 画面发生明显变化时立即评论。
+          scene_change_sensitivity:
+            label: 画面变化灵敏度
+            description: 灵敏度越高，越小的变化也会触发评论。
+            options:
+              low: 低
+              medium: 中
+              high: 高
+        model:
+          title: 视觉模型
+          description: 陪看使用视觉模块中配置的模型来观察视频。
+          configured: 正在使用 {model}
+          not_configured: 还没有配置视觉模型。
+          configure: 配置视觉
+        source:
+          title: 视频源
+          description: 选择正在播放视频的屏幕或窗口。
+          selected: 已选择：{name}
+          none_selected: 还没有选择视频源。
+          categories:
+            displays: 屏幕
+            applications: 应用窗口
+          refetch: 刷新
+          loading: 正在加载视频源...
+          empty: 这个分类下没有找到视频源。
+          permission_required: 需要屏幕捕获权限才能选择视频源。
+          open_preferences: 打开系统设置
+        status:
+          title: 状态
+          states:
+            idle: 未在陪看
+            starting: 正在启动...
+            watching: 正在陪看
+            error: 因错误停止
+          watching_source: 正在看：{name}
+          observations: 已观察 {count} 帧
+          comments: 已评论 {count} 次
+          last_comment_at: 上次评论：{time}
     x:
       description: X / Twitter 的浏览和使用
       title: X / Twitter
@@ -946,6 +1023,79 @@ pages:
           max_length:
             label: 弹幕最大长度
             description: 超过该字数的弹幕会被忽略。
+        song_request:
+          title: 弹幕点歌
+          description: 播放以“点歌”开头的弹幕所请求的歌曲。
+          desktop_only: 弹幕点歌仅支持桌面版应用。
+          enabled:
+            label: 启用弹幕点歌
+            description: 接收直播弹幕中的点歌请求，并按收到的顺序播放。
+          volume:
+            label: 播放音量
+            description: 设置点播歌曲的播放音量。
+          queue_limit:
+            label: 队列上限
+            description: 设置最多可接收的点歌数量，包括正在播放的歌曲。
+          user_cooldown:
+            label: 用户冷却时间
+            description: 设置同一用户两次点歌被接收的最小间隔。
+          status:
+            current: 当前点歌
+            next: 下一首点歌
+            empty: 暂无点歌
+            phase:
+              queued: 排队中
+              resolving: 搜索中
+              playing: 播放中
+          test:
+            title: 测试点歌
+            description: 将歌曲加入弹幕点歌使用的同一个队列。
+            label: 歌曲名
+            placeholder: 例如：稻香 周杰伦
+            submit: 添加测试点歌
+            invalid: 请输入不超过 100 个字符的歌曲名。
+            unavailable: 请先打开主舞台窗口，再测试点歌。
+            disabled: 请先启用弹幕点歌，再添加测试点歌。
+            disposed: 点歌播放器当前不可用。
+            full: 点歌队列已满。
+            cooldown: 请稍后再添加测试点歌。
+          messages:
+            accepted: '已将“{query}”加入点歌队列，当前排在第 {position} 位。'
+            cooldown: 该用户需要等待一段时间才能再次点歌。
+            now_playing: '正在播放：{title} - {artist}'
+            playback_failed: '无法播放“{title}”：{error}'
+            playback_failed_short: 无法继续播放点播歌曲。
+            queue_full: 点歌队列已满。
+            resolve_failed: '没有找到“{query}”的可播放结果：{error}'
+            stream_failed: 音频流因错误而停止。
+            unknown_error: 未知错误
+          accounts:
+            title: 音源账号
+            description: 扫码登录 VIP 账号后，点歌可获得更全的曲库与更好的音质。登录凭证仅保存在本机。登录使用非官方接口，风险自负。
+            logged_in: 已登录
+            logged_out: 未登录
+            login: 扫码登录
+            login_wx: 微信扫码
+            logout: 退出登录
+            retry: 重新获取二维码
+            cancel: 关闭
+            qr_alt: 登录二维码
+            status:
+              waiting: 请用对应平台的手机 App 扫码。
+              scanned: 已扫码，请在手机上确认登录。
+              success: 登录成功。
+              expired: 二维码已过期，请重新获取。
+              failed: 登录失败。
+            messages:
+              success: 登录成功，点歌将使用该账号。
+              signed_out: 已退出登录。
+              create_failed: 无法生成登录二维码。
+              sign_out_failed: 退出登录失败。
+            sources:
+              netease: 网易云音乐
+              qq: QQ 音乐
+              kugou: 酷狗音乐
+              bilibili: 哔哩哔哩
     live_room:
       title: 直播间
       description: 连接 B 站和抖音直播间

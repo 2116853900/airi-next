@@ -1,4 +1,5 @@
 export * from './http'
+export * from './kugou'
 export * from './lrclib'
 export * from './netease'
 export * from './resolver'

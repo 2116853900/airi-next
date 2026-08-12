@@ -6,6 +6,7 @@ import type { ServerChannel } from '../../../services/airi/channel-server'
 import type { GodotStageManager } from '../../../services/airi/godot-stage'
 import type { LiveChatService } from '../../../services/airi/live-chat'
 import type { McpStdioManager } from '../../../services/airi/mcp-servers'
+import type { MusicDlManager } from '../../../services/airi/music-dl'
 import type { NowPlayingEngine } from '../../../services/airi/now-playing'
 import type { UniBarrageManager } from '../../../services/airi/unibarrage'
 import type { AutoUpdater } from '../../../services/electron/auto-updater'
@@ -24,6 +25,7 @@ import { createAuthService } from '../../../services/airi/auth'
 import { createGodotStageService } from '../../../services/airi/godot-stage'
 import { createLiveChatService } from '../../../services/airi/live-chat'
 import { createMcpServersService } from '../../../services/airi/mcp-servers'
+import { createMusicDlService } from '../../../services/airi/music-dl/window-service'
 import { createNowPlayingService } from '../../../services/airi/now-playing'
 import { createOnboardingService } from '../../../services/airi/onboarding'
 import { createWidgetsService } from '../../../services/airi/widgets'
@@ -43,6 +45,7 @@ export async function setupMainWindowElectronInvokes(params: {
   serverChannel: ServerChannel
   godotStageManager: GodotStageManager
   mcpStdioManager: McpStdioManager
+  musicDlManager: MusicDlManager
   i18n: I18n
   onboardingWindowManager: OnboardingWindowManager
   windowAuthManager: WindowAuthManager
@@ -61,6 +64,7 @@ export async function setupMainWindowElectronInvokes(params: {
   createWidgetsService({ context, widgetsManager: params.widgetsManager, window: params.window })
   createAutoUpdaterService({ context, window: params.window, service: params.autoUpdater })
   createMcpServersService({ context, manager: params.mcpStdioManager })
+  createMusicDlService({ context, manager: params.musicDlManager })
   createGodotStageService({ context, manager: params.godotStageManager, window: params.window })
   createOnboardingService({ context, onboardingWindowManager: params.onboardingWindowManager, mainWindow: params.window })
   createAuthService({ context, window: params.window, windowAuthManager: params.windowAuthManager })

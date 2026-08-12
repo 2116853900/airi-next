@@ -44,6 +44,14 @@ export const useSettingsLiveChat = defineStore('settings-live-chat', () => {
   const aiReplyIncludeSender = useLocalStorageManualReset<boolean>('settings/live-chat/ai-reply-include-sender', true)
   /** Danmaku longer than this many characters is ignored. */
   const aiReplyMaxLength = useLocalStorageManualReset<number>('settings/live-chat/ai-reply-max-length', 120)
+  /** Whether live-chat song request commands are accepted. */
+  const songRequestEnabled = useLocalStorageManualReset<boolean>('settings/live-chat/song-request-enabled', true)
+  /** Playback volume for requested songs, from 0 to 1. */
+  const songRequestVolume = useLocalStorageManualReset<number>('settings/live-chat/song-request-volume', 0.5)
+  /** Maximum accepted requests, including the currently playing song. */
+  const songRequestQueueLimit = useLocalStorageManualReset<number>('settings/live-chat/song-request-queue-limit', 20)
+  /** Minimum gap between accepted requests from one viewer. */
+  const songRequestUserCooldownMs = useLocalStorageManualReset<number>('settings/live-chat/song-request-user-cooldown-ms', 30_000)
 
   function resetState() {
     showOnCaptionOverlay.value = true
@@ -66,6 +74,10 @@ export const useSettingsLiveChat = defineStore('settings-live-chat', () => {
     aiReplyCooldownMs.value = 15_000
     aiReplyIncludeSender.value = true
     aiReplyMaxLength.value = 120
+    songRequestEnabled.value = true
+    songRequestVolume.value = 0.5
+    songRequestQueueLimit.value = 20
+    songRequestUserCooldownMs.value = 30_000
   }
 
   return {
@@ -89,6 +101,10 @@ export const useSettingsLiveChat = defineStore('settings-live-chat', () => {
     aiReplyCooldownMs,
     aiReplyIncludeSender,
     aiReplyMaxLength,
+    songRequestEnabled,
+    songRequestVolume,
+    songRequestQueueLimit,
+    songRequestUserCooldownMs,
     resetState,
   }
 })

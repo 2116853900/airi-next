@@ -60,6 +60,8 @@ import { initializeElectronAuthCallbackBridge } from './bridges/electron-auth-ca
 import { initializeStageThreeRuntimeTraceBridge } from './bridges/stage-three-runtime-trace'
 import { useLanguage } from './composables/use-language'
 import { useLiveChatAiReply } from './composables/use-live-chat-ai-reply'
+import { useSongRequestPlayback } from './composables/use-song-request-playback'
+import { useWatchAlong } from './composables/use-watch-along'
 import { useServerChannelSettingsStore } from './stores/settings/server-channel'
 import { useStageWindowLifecycleStore } from './stores/stage-window-lifecycle'
 import {
@@ -159,6 +161,12 @@ function createFullStageRuntime() {
   const isWidgetsWindowRoute = () => route.path === '/widgets'
   const { post: postLiveChat } = useBroadcastChannel<LiveChatOverlayMessage, LiveChatOverlayMessage>({ name: LIVE_CHAT_OVERLAY_CHANNEL })
   const liveChatAiReply = useLiveChatAiReply()
+  const songRequestPlayback = isLiveChatReplyHost ? useSongRequestPlayback() : null
+  // The watch-along engine captures the selected screen or window, observes
+  // it with the vision model, and speaks through the chat pipeline, so the
+  // chat-authority window must own it.
+  if (isLiveChatReplyHost)
+    useWatchAlong()
   let disposeLiveChatListener: (() => void) | undefined
   let disposeLiveChatConsumer: (() => void) | undefined
 
@@ -265,12 +273,21 @@ function createFullStageRuntime() {
   return {
     async initialize() {
       analyticsStore.initialize()
-      await displayModelsStore.initialize()
-      cardStore.initialize()
 
-      await displayModelsStore.loadDisplayModelsFromIndexedDB()
-      await settingsStore.initializeStageModel()
-      await settingsAudioDeviceStore.initialize()
+      // Overlay windows (caption, danmaku, lyrics) only render external
+      // content pushed over eventa or broadcast channels. Skip the stage-model
+      // pipeline for them: displayModelsStore.initialize() dynamically imports
+      // every renderer engine (Three.js, Live2D, Spine, MMD) into the window's
+      // process, which dominates the CPU and memory cost of opening an
+      // overlay window while none of it is ever used there.
+      if (!isOverlayWindow) {
+        await displayModelsStore.initialize()
+        cardStore.initialize()
+
+        await displayModelsStore.loadDisplayModelsFromIndexedDB()
+        await settingsStore.initializeStageModel()
+        await settingsAudioDeviceStore.initialize()
+      }
 
       if (isGodotStageRoute()) {
         try {
@@ -304,9 +321,10 @@ function createFullStageRuntime() {
           catch (error) {
             console.warn('[App] Failed to post live chat danmaku:', error)
           }
-          // Feed qualifying danmaku into the chat authority; the character's
-          // reply is spoken through the speech pipeline and kept in history.
-          void liveChatAiReply.handleLiveChatMessage(message)
+          // Song requests stay visible as danmaku, but do not enter the AI
+          // reply flow. The playback queue owns their remaining lifecycle.
+          if (!songRequestPlayback?.handleLiveChatMessage(message))
+            void liveChatAiReply.handleLiveChatMessage(message)
         })
       }
       else if (isLiveChatCaptionHost) {
@@ -342,7 +360,11 @@ function createFullStageRuntime() {
         })
       }
 
-      inferencePreload.triggerPreload()
+      // Inference preloads (for example the Kokoro TTS model) may load
+      // hundreds of megabytes per renderer process. Overlay windows never
+      // synthesize speech or transcribe audio, so they must not preload.
+      if (!isOverlayWindow)
+        inferencePreload.triggerPreload()
     },
     dispose() {
       disposeLiveChatListener?.()
@@ -350,6 +372,7 @@ function createFullStageRuntime() {
       disposeLiveChatConsumer?.()
       disposeLiveChatConsumer = undefined
       liveChatAiReply.dispose()
+      songRequestPlayback?.dispose()
       if (!isAuxiliaryChatRoute && !isOverlayWindow)
         contextBridgeStore.dispose()
     },

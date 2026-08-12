@@ -13,6 +13,21 @@ export interface NowPlayingTrack {
   artworkUrl?: string
 }
 
+/** Playback state supplied by an AIRI-owned audio source. */
+export type NowPlayingPlaybackUpdate
+  = | {
+    owner: string
+    trackId: string
+    status: 'paused' | 'playing'
+    positionMs: number
+    track: NowPlayingTrack
+  }
+  | {
+    owner: string
+    trackId: string
+    status: 'stopped'
+  }
+
 export interface NowPlayingLyricsLine {
   /** Start time of this lyric line in milliseconds from the song start. */
   timeMs: number
@@ -21,9 +36,14 @@ export interface NowPlayingLyricsLine {
 }
 
 /** Which service supplied the current lyrics (or none). */
-export type NowPlayingLyricsSource = 'lrclib' | 'netease' | 'none'
+export type NowPlayingLyricsSource = 'lrclib' | 'netease' | 'kugou' | 'none'
 
-/** User-configured lyrics backend preference. */
+/**
+ * User-configured lyrics backend preference.
+ *
+ * 'lrclib' restricts lookups to LRCLIB. 'lrclib-netease' additionally enables
+ * the online fallbacks for Chinese songs (NetEase Cloud Music, then KuGou).
+ */
 export type NowPlayingLyricsSourceSetting = 'lrclib' | 'lrclib-netease'
 
 /**

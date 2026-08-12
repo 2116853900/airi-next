@@ -59,6 +59,9 @@ jobs:
           - app_name: stage-tamagotchi-unibarrage
             command: cd engines/stage-tamagotchi-unibarrage && go vet ./... && go build -o /tmp/unibarrage-check .
 
+          - app_name: stage-tamagotchi-music-dl
+            command: cd engines/stage-tamagotchi-music-dl && go vet ./... && go test ./... && go build -o /tmp/music-dl-check .
+
           - app_name: ui-transitions
             command: pnpm -F @proj-airi/ui-transitions run play:build
 
@@ -100,10 +103,10 @@ jobs:
           include-templates: true
 
       - name: Setup Go
-        if: matrix.app_name == 'stage-tamagotchi-unibarrage'
+        if: matrix.app_name == 'stage-tamagotchi-unibarrage' || matrix.app_name == 'stage-tamagotchi-music-dl'
         uses: actions/setup-go@v6
         with:
-          go-version: '1.24.x'
+          go-version: '1.25.x'
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build:packages

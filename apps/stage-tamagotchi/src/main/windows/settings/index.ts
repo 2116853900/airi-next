@@ -4,6 +4,7 @@ import type { ServerChannel } from '../../services/airi/channel-server'
 import type { GodotStageManager } from '../../services/airi/godot-stage'
 import type { LiveChatService } from '../../services/airi/live-chat'
 import type { McpStdioManager } from '../../services/airi/mcp-servers'
+import type { MusicDlManager } from '../../services/airi/music-dl'
 import type { NowPlayingEngine } from '../../services/airi/now-playing'
 import type { UniBarrageManager } from '../../services/airi/unibarrage'
 import type { AutoUpdater } from '../../services/electron/auto-updater'
@@ -39,6 +40,7 @@ export function setupSettingsWindowReusableFunc(params: {
   serverChannel: ServerChannel
   godotStageManager: GodotStageManager
   mcpStdioManager: McpStdioManager
+  musicDlManager: MusicDlManager
   i18n: I18n
   windowAuthManager: WindowAuthManager
   globalShortcut: GlobalShortcutService
@@ -81,6 +83,7 @@ export function setupSettingsWindowReusableFunc(params: {
       serverChannel: params.serverChannel,
       godotStageManager: params.godotStageManager,
       mcpStdioManager: params.mcpStdioManager,
+      musicDlManager: params.musicDlManager,
       i18n: params.i18n,
       windowAuthManager: params.windowAuthManager,
       globalShortcut: params.globalShortcut,

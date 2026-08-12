@@ -1,12 +1,20 @@
 <script setup lang="ts">
 import type { NowPlayingState } from '@proj-airi/stage-shared/now-playing'
+import type { SongRequestPlaybackItem, SongRequestPlaybackState } from '@proj-airi/stage-shared/song-request'
 
 import { defineInvoke } from '@moeru/eventa'
 import { useElectronEventaContext } from '@proj-airi/electron-vueuse'
 import { findCurrentLineIndex, nowPlayingGetStateInvokeEventa, nowPlayingStateChangedInvokeEventa } from '@proj-airi/stage-shared/now-playing'
+import {
+  createEmptySongRequestPlaybackState,
+  getSongRequestBusContext,
+  SONG_REQUEST_PLAYBACK_OWNER,
+  songRequestGetPlaybackStateInvokeEventa,
+  songRequestPlaybackStateChangedEventa,
+} from '@proj-airi/stage-shared/song-request'
 import { useSettingsNowPlaying } from '@proj-airi/stage-ui/stores/settings'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 /** Local re-render clock so the active line advances smoothly between engine emissions. */
@@ -18,10 +26,12 @@ const { showOnCaptionOverlay } = storeToRefs(useSettingsNowPlaying())
 const context = useElectronEventaContext()
 const getState = defineInvoke(context.value, nowPlayingGetStateInvokeEventa)
 
-const state = ref<NowPlayingState>()
-const receivedAt = ref(0)
-const now = ref(Date.now())
+const state = shallowRef<NowPlayingState>()
+const receivedAt = shallowRef(0)
+const now = shallowRef(Date.now())
+const songRequestState = shallowRef<SongRequestPlaybackState>(createEmptySongRequestPlaybackState())
 let removeStateListener: (() => void) | undefined
+let removeSongRequestStateListener: (() => void) | undefined
 let tickTimer: ReturnType<typeof setInterval> | undefined
 
 function setState(next: NowPlayingState) {
@@ -71,10 +81,51 @@ const paused = computed(() => state.value?.status === 'paused')
 const lyricsLoading = computed(() => Boolean(state.value?.lyricsLoading))
 const hasLyrics = computed(() => Boolean(state.value?.lyrics.length))
 
+// The tick only smooths the active lyric line between engine emissions, so it
+// is useless while hidden, paused, stopped, or without timed lyrics. Keeping
+// the interval off in those states lets the renderer stay fully idle.
+const tickActive = computed(() =>
+  visible.value
+  && state.value?.status === 'playing'
+  && hasLyrics.value,
+)
+
+watch(tickActive, (active) => {
+  if (active) {
+    if (tickTimer)
+      return
+    // Re-anchor before the first tick: a stale `now` from the previous run
+    // would otherwise produce a negative extrapolation in positionMs.
+    now.value = Date.now()
+    tickTimer = setInterval(() => {
+      now.value = Date.now()
+    }, TICK_MS)
+    return
+  }
+  if (tickTimer) {
+    clearInterval(tickTimer)
+    tickTimer = undefined
+  }
+}, { immediate: true })
+
+const isSongRequestPlayback = computed(() => state.value?.playerName === SONG_REQUEST_PLAYBACK_OWNER)
+const currentRequest = computed(() => isSongRequestPlayback.value ? songRequestState.value.current : null)
+const nextRequest = computed(() => isSongRequestPlayback.value ? songRequestState.value.next : null)
+
+function requestLabel(item: SongRequestPlaybackItem): string {
+  return item.track ? `${item.track.title} · ${item.track.artist}` : item.query
+}
+
 onMounted(async () => {
   removeStateListener = context.value.on(nowPlayingStateChangedInvokeEventa, (event) => {
     if (event?.body)
       setState(event.body)
+  })
+  const songRequestBus = getSongRequestBusContext()
+  const getSongRequestState = defineInvoke(songRequestBus, songRequestGetPlaybackStateInvokeEventa)
+  removeSongRequestStateListener = songRequestBus.on(songRequestPlaybackStateChangedEventa, (event) => {
+    if (event?.body)
+      songRequestState.value = event.body
   })
 
   try {
@@ -83,14 +134,17 @@ onMounted(async () => {
   }
   catch {}
 
-  tickTimer = setInterval(() => {
-    now.value = Date.now()
-  }, TICK_MS)
+  try {
+    songRequestState.value = await getSongRequestState()
+  }
+  catch {}
 })
 
 onUnmounted(() => {
   removeStateListener?.()
   removeStateListener = undefined
+  removeSongRequestStateListener?.()
+  removeSongRequestStateListener = undefined
   if (tickTimer) {
     clearInterval(tickTimer)
     tickTimer = undefined
@@ -108,6 +162,9 @@ onUnmounted(() => {
   >
     <div :class="['flex min-w-0 items-center gap-1.5 text-xs text-neutral-300']">
       <span class="i-solar:music-notes-bold-duotone shrink-0 text-primary-300" />
+      <span v-if="currentRequest" :class="['shrink-0 text-primary-300 font-medium']">
+        {{ t('tamagotchi.stage.now-playing.current_request') }}
+      </span>
       <span class="min-w-0 truncate text-neutral-100 font-semibold">
         {{ state?.track?.title }}
       </span>
@@ -119,6 +176,19 @@ onUnmounted(() => {
         class="ml-auto shrink-0 rounded bg-neutral-900 px-1 py-0.5 text-[10px] text-neutral-400 leading-none"
       >
         {{ t('tamagotchi.stage.now-playing.paused') }}
+      </span>
+    </div>
+
+    <div
+      v-if="nextRequest"
+      :class="['flex min-w-0 items-center gap-1.5 text-xs text-neutral-400']"
+    >
+      <span :class="['i-solar:skip-next-bold-duotone h-3.5 w-3.5 shrink-0']" />
+      <span :class="['shrink-0']">
+        {{ t('tamagotchi.stage.now-playing.next_request') }}
+      </span>
+      <span :class="['min-w-0 truncate text-neutral-300']">
+        {{ requestLabel(nextRequest) }}
       </span>
     </div>
 

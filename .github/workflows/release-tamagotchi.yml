@@ -155,7 +155,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.24.x'
+          go-version: '1.25.x'
 
       - name: Build UniBarrage (Windows)
         if: matrix.os == 'windows-latest'
@@ -172,6 +172,24 @@ jobs:
       - name: Build UniBarrage (Linux)
         if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm'
         working-directory: ./engines/stage-tamagotchi-unibarrage
+        shell: bash
+        run: node ./scripts/build.mjs --os linux --arch ${{ matrix.arch }}
+
+      - name: Build song request engine (Windows)
+        if: matrix.os == 'windows-latest'
+        working-directory: ./engines/stage-tamagotchi-music-dl
+        shell: bash
+        run: node ./scripts/build.mjs --os win --arch ${{ matrix.arch }}
+
+      - name: Build song request engine (macOS)
+        if: matrix.os == 'macos-15-intel' || matrix.os == 'macos-26'
+        working-directory: ./engines/stage-tamagotchi-music-dl
+        shell: bash
+        run: node ./scripts/build.mjs --os mac --arch ${{ matrix.arch }}
+
+      - name: Build song request engine (Linux)
+        if: matrix.os == 'ubuntu-latest' || matrix.os == 'ubuntu-24.04-arm'
+        working-directory: ./engines/stage-tamagotchi-music-dl
         shell: bash
         run: node ./scripts/build.mjs --os linux --arch ${{ matrix.arch }}
 

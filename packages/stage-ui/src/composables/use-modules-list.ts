@@ -20,6 +20,7 @@ import { useHearingStore } from '../stores/modules/hearing'
 import { useSpeechStore } from '../stores/modules/speech'
 import { useTwitterStore } from '../stores/modules/twitter'
 import { useVisionStore } from '../stores/modules/vision'
+import { useWatchAlongStore } from '../stores/modules/watch-along'
 import { useWebSearchStore } from '../stores/modules/web-search'
 
 export interface Module {
@@ -42,6 +43,7 @@ export function useModulesList() {
   const speechStore = useSpeechStore()
   const hearingStore = useHearingStore()
   const visionStore = useVisionStore()
+  const watchAlongStore = useWatchAlongStore()
   const discordStore = useDiscordStore()
   const twitterStore = useTwitterStore()
   const webSearchStore = useWebSearchStore()
@@ -198,6 +200,19 @@ export function useModulesList() {
           icon: 'i-solar:music-notes-bold-duotone',
           to: '/settings/modules/beat-sync',
           configured: beatSyncState.value?.isActive ?? false,
+          category: 'essential',
+        }]
+      : []),
+    // Watch-along depends on Electron screen capture, so the entry only
+    // shows on the desktop edition.
+    ...(isStageTamagotchi()
+      ? [{
+          id: 'watch-along',
+          name: t('settings.pages.modules.watch_along.title'),
+          description: t('settings.pages.modules.watch_along.description'),
+          icon: 'i-solar:videocamera-record-bold-duotone',
+          to: '/settings/modules/watch-along',
+          configured: watchAlongStore.configured,
           category: 'essential',
         }]
       : []),

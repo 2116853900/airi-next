@@ -1,4 +1,4 @@
-export type VisionWorkloadId = 'screen:interpret' | 'screen:understand' | 'screen:ocr' | 'screen:ui-automation'
+export type VisionWorkloadId = 'screen:interpret' | 'screen:understand' | 'screen:ocr' | 'screen:ui-automation' | 'video:watch'
 
 export interface VisionWorkloadConfig {
   id: VisionWorkloadId
@@ -46,6 +46,19 @@ export const VISION_WORKLOADS: VisionWorkloadConfig[] = [
     prompt: [
       'Identify actionable UI elements (buttons, inputs, menus).',
       'Return a list of elements with labels and approximate purpose.',
+    ].join('\n'),
+  },
+  {
+    id: 'video:watch',
+    label: 'Video watching',
+    description: 'Observe one frame of a video that plays on screen.',
+    prompt: [
+      'You observe one frame of a video that plays on screen.',
+      'Describe the frame in 1-3 short factual sentences:',
+      '- name the video, show, or platform if a title, watermark, or subtitle shows it',
+      '- describe the scene, the people, and the actions',
+      '- include on-screen text or subtitles when they carry meaning',
+      'Do not speculate about content that the frame does not show.',
     ].join('\n'),
   },
 ]

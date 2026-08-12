@@ -108,3 +108,5 @@ now-playing:
   searching: Searching for lyrics…
   no_lyrics: No lyrics available
   paused: Paused
+  current_request: Current request
+  next_request: Next request

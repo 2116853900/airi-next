@@ -9,6 +9,7 @@ import {
   nowPlayingRefreshLyricsInvokeEventa,
   nowPlayingSetEnabledInvokeEventa,
   nowPlayingStateChangedInvokeEventa,
+  nowPlayingUpdatePlaybackInvokeEventa,
 } from '@proj-airi/stage-shared/now-playing'
 
 type MainContext = ReturnType<typeof createContext>['context']
@@ -37,6 +38,7 @@ export function createNowPlayingService(params: {
     defineInvokeHandler(params.context, nowPlayingGetStateInvokeEventa, () => params.engine.getState()),
     defineInvokeHandler(params.context, nowPlayingSetEnabledInvokeEventa, enabled => params.engine.setEnabled(enabled)),
     defineInvokeHandler(params.context, nowPlayingRefreshLyricsInvokeEventa, () => params.engine.refreshLyrics()),
+    defineInvokeHandler(params.context, nowPlayingUpdatePlaybackInvokeEventa, playback => params.engine.updatePlayback(playback)),
   ]
 
   const cleanup = () => {

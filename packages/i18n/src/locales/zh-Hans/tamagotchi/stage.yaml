@@ -105,3 +105,5 @@ now-playing:
   searching: 正在搜索歌词…
   no_lyrics: 暂无歌词
   paused: 已暂停
+  current_request: 当前点歌
+  next_request: 下一首点歌

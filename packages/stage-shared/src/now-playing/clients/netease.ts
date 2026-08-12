@@ -14,8 +14,15 @@ const NETEASE_HEADERS = {
 export interface NetEaseSong {
   id: number
   name: string
-  ar: Array<{ name: string }>
+  /** Artist shape returned by the current search endpoint. */
+  artists?: Array<{ name: string }>
+  /** Artist shape returned by newer NetEase endpoints. */
+  ar?: Array<{ name: string }>
   al?: { name: string }
+  /** Track length in milliseconds (legacy search endpoint). */
+  duration?: number
+  /** Track length in milliseconds (newer endpoints). */
+  dt?: number
 }
 
 export interface NetEaseLyric {

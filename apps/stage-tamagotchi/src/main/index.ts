@@ -34,6 +34,7 @@ import { setupGodotStageManager } from './services/airi/godot-stage'
 import { setupBuiltInServer } from './services/airi/http-server'
 import { setupLiveChatService } from './services/airi/live-chat'
 import { setupMcpStdioManager } from './services/airi/mcp-servers'
+import { setupMusicDlManager } from './services/airi/music-dl'
 import { createMprisProvider, setupNowPlayingEngine } from './services/airi/now-playing'
 import { setupExtensionHost } from './services/airi/plugins'
 import { setupUniBarrageManager } from './services/airi/unibarrage'
@@ -198,6 +199,10 @@ app.whenReady().then(async () => {
     build: () => setupNowPlayingEngine({ provider: isLinux ? createMprisProvider() : null }),
   })
 
+  const musicDl = injeca.provide('modules:music-dl', {
+    build: () => setupMusicDlManager(),
+  })
+
   // Bundled UniBarrage danmaku proxy sidecar; the live-chat connector dials it.
   const unibarrage = injeca.provide('modules:unibarrage', {
     build: () => setupUniBarrageManager(),
@@ -242,7 +247,7 @@ app.whenReady().then(async () => {
   })
 
   const settingsWindow = injeca.provide('windows:settings', {
-    dependsOn: { widgetsManager, beatSync, autoUpdater, devtoolsWindow: devtoolsMarkdownStressWindow, serverChannel, godotStageManager, mcpStdioManager, i18n, windowAuthManager, globalShortcut, spotlightWindow, nowPlaying, liveChat, unibarrageManager: unibarrage },
+    dependsOn: { widgetsManager, beatSync, autoUpdater, devtoolsWindow: devtoolsMarkdownStressWindow, serverChannel, godotStageManager, mcpStdioManager, musicDlManager: musicDl, i18n, windowAuthManager, globalShortcut, spotlightWindow, nowPlaying, liveChat, unibarrageManager: unibarrage },
     build: async ({ dependsOn }) =>
       setupSettingsWindowReusableFunc({
         ...dependsOn,
@@ -251,7 +256,7 @@ app.whenReady().then(async () => {
   })
 
   const mainWindow = injeca.provide('windows:main', {
-    dependsOn: { editorWindow, settingsWindow, chatWindow, widgetsManager, noticeWindow, beatSync, autoUpdater, serverChannel, godotStageManager, mcpStdioManager, i18n, onboardingWindowManager, windowAuthManager, nowPlaying, liveChat, unibarrageManager: unibarrage },
+    dependsOn: { editorWindow, settingsWindow, chatWindow, widgetsManager, noticeWindow, beatSync, autoUpdater, serverChannel, godotStageManager, mcpStdioManager, musicDlManager: musicDl, i18n, onboardingWindowManager, windowAuthManager, nowPlaying, liveChat, unibarrageManager: unibarrage },
     build: async ({ dependsOn }) => setupMainWindow({
       ...dependsOn,
       onWindowCreated: (window) => {
@@ -315,6 +320,18 @@ app.whenReady().then(async () => {
     dependsOn: { nowPlaying },
     callback: ({ nowPlaying: engine }) => {
       engine.start()
+    },
+  })
+
+  injeca.invoke({
+    dependsOn: { musicDl },
+    callback: async ({ musicDl: manager }) => {
+      try {
+        await manager.start()
+      }
+      catch (error) {
+        log.withError(error).warn('failed to start song request sidecar')
+      }
     },
   })
 
